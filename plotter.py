@@ -134,7 +134,7 @@ def plot_fmi_pvlib_mono(data_fmi, data_pvlib):
     :return:
     """
 
-    # Timezone of plots could be adjusted to local timezone here. Currently this does not work and thus plots are in UTC
+    # Convert timezone from UTC to Europe/Helsinki for plotting
     finnish_time = pytz.timezone("Europe/Helsinki")
 
     data_pvlib["time"] = data_pvlib["time"].dt.tz_convert(finnish_time)
@@ -166,12 +166,12 @@ def plot_fmi_pvlib_mono(data_fmi, data_pvlib):
     timestamp = str(date_for_simulation) + " " + str(now.time())[0:5]
 
     # adding titles for both plots
-    a0.set_title('Power generation "' + config.site_name + '" ' + timestamp + "UTC")
+    a0.set_title('Power generation "' + config.site_name + '" ' + timestamp + " (Europe/Helsinki)")
     a1.set_title("Energy generation")
 
     # plot 0 labels
     a0.set_ylabel("Power(W)")
-    a0.set_xlabel("Time(UTC)")
+    a0.set_xlabel("Time (Europe/Helsinki)")
 
     a1.set_xlabel("Date")
     a1.set_ylabel("Energy(kWh)")
@@ -213,22 +213,24 @@ def plot_fmi_pvlib_mono(data_fmi, data_pvlib):
 
             a1.text(fmi_x[i], new_y_position, txt, ha="center", backgroundcolor="#FFFFFFd5")
 
-    # formatting plot 1 date axis
-    a0.xaxis.set_major_formatter(DateFormatter("%m-%d"))
+    # formatting plot 1 date axis with Helsinki timezone
+    major_formatter = DateFormatter("%m-%d", tz=finnish_time)
+    minor_formatter = DateFormatter("%H", tz=finnish_time)
+
+    a0.xaxis.set_major_formatter(major_formatter)
     a0.xaxis.set_major_locator(matplotlib.dates.DayLocator(interval=1))
     a0.xaxis.set_minor_locator(matplotlib.dates.HourLocator(interval=4))
-    a0.xaxis.set_minor_formatter(DateFormatter("%H"))
+    a0.xaxis.set_minor_formatter(minor_formatter)
 
     # moves major axis to top of plot
     a0.tick_params(axis="x", which="major", top=True, labeltop=True, bottom=False, labelbottom=False)
 
     # shifts markers for days from midnight to near middle of power generation peaks
-    shifter = matplotlib.dates.HourLocator(byhour=10)
+    shifter = matplotlib.dates.HourLocator(byhour=10, tz=finnish_time)
     a0.xaxis.set_major_locator(shifter)
 
-    # formatting plot 2 date axis so that 2023-11-23 is shown as 11-23
-    formatter = DateFormatter("%m-%d")
-    a1.xaxis.set_major_formatter(formatter)
+    # formatting plot 2 date axis so that 2023-11-23 is shown as 11-23 (with Helsinki timezone)
+    a1.xaxis.set_major_formatter(major_formatter)
 
     # formatting plot 2 date axis so that markers are shown only once per day
     a1.xaxis.set_major_locator(matplotlib.dates.DayLocator(interval=1))
