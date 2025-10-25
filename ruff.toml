@@ -1,0 +1,50 @@
+# Ruff configuration file
+# https://docs.astral.sh/ruff/
+
+# Modern screen can handle 140 chars wide code.
+line-length = 140
+indent-width = 4
+
+# Assume Python version
+target-version = "py312"
+
+[lint]
+
+# Enable additional rules
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+
+# Ignore specific rules if needed
+ignore = []
+
+# Allow autofix for all enabled rules
+fixable = ["ALL"]
+unfixable = []
+
+# Exclude files/directories from linting
+exclude = [
+    ".git",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+]
+
+# Per-file linting rule ignores
+[lint.per-file-ignores]
+"*__testing.py" = ["UP031"] #  Don't complain about all printf in tests.
+
+[format]
+# Indent with spaces
+indent-style = "space"
+
+# Respect magic trailing commas
+skip-magic-trailing-comma = false
