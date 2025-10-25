@@ -50,6 +50,9 @@ timezone = "UTC"
 # will interpolate if resolution is higher than 60(30 or 15 etc.) as 60 is what fmi open data is capable of.
 data_resolution = 60
 
+# Cache locally fetched fmi open data to avoid repeated downloads.
+use_caching = True  # value= [True] or [False] this variable toggles caching of fmi open data on or off
+
 ########### PARAMETERS FOR FMI INSTALLATIONS BELOW:
 
 

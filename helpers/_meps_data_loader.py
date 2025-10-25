@@ -13,6 +13,7 @@ Modifications by: TimoSalola (Timo Salola).
 """
 
 import datetime as dt
+import json
 from datetime import datetime
 
 import numpy as np
@@ -20,7 +21,44 @@ import pandas
 import pandas as pd
 from fmiopendata.wfs import download_stored_query
 
+import config
 from helpers import astronomical_calculations
+
+
+def load_cached_data(cache_filename: str) -> dict | None:
+    if config.use_caching is False:
+        return None
+
+    try:
+        # Read cached data from file
+        with open(cache_filename) as f:
+            data = json.load(f)
+
+            ret_data = {}
+            # Keys are strings in file. Convert to datetime.
+            for time_key, value in list(data.items()):
+                ret_data[datetime.fromisoformat(time_key)] = value
+
+            # Loop
+
+            return ret_data
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
+def save_cached_data(cache_filename: str, data: dict) -> None:
+    if config.use_caching is False:
+        return None
+
+    # Data has datetime as key so its not serializable to json.
+    # First converting keys to string.
+    data_to_save = {}
+    for time_key, value in list(data.items()):
+        data_to_save[str(time_key)] = value
+
+    # Write to file
+    with open(cache_filename, "w") as f:
+        json.dump(data_to_save, f, indent=4)
 
 
 def collect_fmi_opendata(latlon: str, start_time: datetime, end_time: datetime) -> pandas.DataFrame:
@@ -44,12 +82,25 @@ def collect_fmi_opendata(latlon: str, start_time: datetime, end_time: datetime) 
     ]
     parameters_str = ",".join(parameters)
 
-    # Collect data
-    snd = download_stored_query(
-        collection_string,
-        args=["latlon=" + latlon, "starttime=" + str(start_time), "endtime=" + str(end_time), "parameters=" + parameters_str],
-    )
-    data = snd.data
+    # Check if we could find previously cached data from file.
+    # (File name has DD_MM_YYYY_HHMM in it to ensure it goes stale by time.)
+    cache_filename = config.save_directory + "cache_fmiopendata_" + start_time.strftime("%d_%m_%Y_%H%M") + ".json"
+    cache_data = load_cached_data(cache_filename)
+    if cache_data:
+        # If cached data is available, use it.
+        print("Using cached FMI open data from: " + cache_filename)
+        data = cache_data
+    else:
+        # Collect data
+        snd = download_stored_query(
+            collection_string,
+            args=["latlon=" + latlon, "starttime=" + str(start_time), "endtime=" + str(end_time), "parameters=" + parameters_str],
+        )
+        data = snd.data
+
+        # Save loaded data to cache for future use
+        print("Saving FMI open data to cache: " + cache_filename)
+        save_cached_data(cache_filename, data)
 
     # Times to use in forming dataframe
     data_list = []
