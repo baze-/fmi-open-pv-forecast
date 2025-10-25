@@ -9,7 +9,9 @@ Author: TimoSalola (Timo Salola).
 # site name used for plotting and saved file name
 site_name = "output_example"
 save_directory = "output/"
+save_plot = True  # value= [True] or [False] this variable toggles plot saving to png on or off
 save_csv = False  # value= [True] or [False] this variable toggles csv file saving on or off
+save_json = False  # value= [True] or [False] this variable toggles json file saving on or off
 console_print = True  # value= [True] or [False] this variable toggles console printing of the full output table on or off
 
 #### SIMULATED INSTALLATION PARAMETERS BELOW:
