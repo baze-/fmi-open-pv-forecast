@@ -4,12 +4,15 @@ dataframe.
 
 Author: TimoSalola (Timo Salola).
 """
+
 import math
+
 import pandas
+
 import config
 
 
-def add_estimated_panel_temperature(df:pandas.DataFrame)-> pandas.DataFrame:
+def add_estimated_panel_temperature(df: pandas.DataFrame) -> pandas.DataFrame:
     """
     Adds an estimate for panel temperature based on wind speed, air temperature and absorbed radiation.
     If air temperature, wind speed or absorbed radiation columns are missing, aborts.
@@ -50,7 +53,7 @@ def add_estimated_panel_temperature(df:pandas.DataFrame)-> pandas.DataFrame:
     return df
 
 
-def add_dummy_wind_and_temp(df:pandas.DataFrame, wind=2, temp=20)-> pandas.DataFrame:
+def add_dummy_wind_and_temp(df: pandas.DataFrame, wind=2, temp=20) -> pandas.DataFrame:
     """
     Adds dummy wind speed and air temperature values. 20 Celsius and 2 m/s wind by default.
     :param df:
@@ -68,7 +71,7 @@ def add_dummy_wind_and_temp(df:pandas.DataFrame, wind=2, temp=20)-> pandas.DataF
     return df
 
 
-def add_dummy_temperature(df: pandas.DataFrame, temp=20)->pandas.DataFrame :
+def add_dummy_temperature(df: pandas.DataFrame, temp=20) -> pandas.DataFrame:
     df["T"] = temp
     return df
 
@@ -96,15 +99,17 @@ def add_wind_and_temp_to_df1_from_df2(df1: pandas.DataFrame, df2: pandas.DataFra
     df1 = df1.merge(weather_df, on="time", how="outer")
 
     # filling in nan values for wind
-    df1['wind'] = df1['wind'].interpolate(limit_direction='both')
+    df1["wind"] = df1["wind"].interpolate(limit_direction="both")
 
     # filling in nan values for temp
-    df1['T'] = df1['T'].interpolate(limit_direction='both')
+    df1["T"] = df1["T"].interpolate(limit_direction="both")
 
     return df1
 
 
-def temperature_of_module(absorbed_radiation: float, wind: float, module_elevation: float, air_temperature: float) ->float:
+def temperature_of_module(
+    absorbed_radiation: float, wind: float, module_elevation: float, air_temperature: float
+) -> float:
     """
     :param absorbed_radiation: radiation hitting solar panel after reflections are accounted for in W
     :param wind: wind speed in meters per second

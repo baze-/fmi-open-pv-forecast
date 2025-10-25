@@ -24,13 +24,14 @@ Author: TimoSalola (Timo Salola).
 """
 
 from datetime import datetime
-import pandas
+
 import pvlib.atmosphere
+from pvlib import irradiance, location
+
 import config
-from pvlib import location, irradiance
 
 
-def get_solar_angle_of_incidence_fast(dt:datetime)-> float:
+def get_solar_angle_of_incidence_fast(dt: datetime) -> float:
     """
     Estimates solar angle of incidence at given datetime. Other parameters, tilt, azimuth and geolocation are read from
     config.py.
@@ -40,7 +41,6 @@ def get_solar_angle_of_incidence_fast(dt:datetime)-> float:
     Optimized version, should work well
     """
 
-
     solar_azimuth, solar_apparent_zenith = get_solar_azimuth_zenit_fast(dt)
     panel_tilt = config.tilt
     panel_azimuth = config.azimuth
@@ -48,14 +48,14 @@ def get_solar_angle_of_incidence_fast(dt:datetime)-> float:
     # angle of incidence, angle between direct sunlight and solar panel normal
     angle_of_incidence = irradiance.aoi(panel_tilt, panel_azimuth, solar_apparent_zenith, solar_azimuth)
 
-    # restricting AOI values as projection functions do not expect AOI higher than 90. Should never be lower than 0 but setting a limit anyways
+    # restricting AOI values as projection functions do not expect AOI higher than 90.
+    # Should never be lower than 0 but setting a limit anyways
     angle_of_incidence = angle_of_incidence.clip(lower=0, upper=90)
 
     return angle_of_incidence
 
 
-
-def get_air_mass_fast(time: datetime)-> float:
+def get_air_mass_fast(time: datetime) -> float:
     """
     Generates value for air mass using pvlib default model(kastenyoung1989).
     This value tells us the relative thickness of atmosphere between sun and the PV panels.
@@ -67,8 +67,7 @@ def get_air_mass_fast(time: datetime)-> float:
     return air_mass
 
 
-
-def get_solar_azimuth_zenit_fast(dt: datetime)-> (float, float):
+def get_solar_azimuth_zenit_fast(dt: datetime) -> (float, float):
     """
     Returns apparent solar zenith and solar azimuth angles in degrees.
     :param dt: time to compute the solar position for.

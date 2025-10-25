@@ -3,25 +3,27 @@ Functions for generating and saving plots.
 
 Author: Timo Salola.
 """
-import matplotlib.pyplot
-import matplotlib.dates
-import pandas
-from matplotlib import dates
-import datetime
+
 from datetime import datetime
-from matplotlib.dates import DateFormatter
-import config
+
+import matplotlib.dates
+import matplotlib.pyplot
+import pandas
 import pytz
+from matplotlib import dates
+from matplotlib.dates import DateFormatter
+
+import config
+
 global fig
 global ax
-
 
 
 # INIT PLOT #################################################
 def init_plot():
     global fig
     global ax
-    matplotlib.pyplot.rcParams['figure.constrained_layout.use'] = True
+    matplotlib.pyplot.rcParams["figure.constrained_layout.use"] = True
     fig = matplotlib.pyplot.figure(figsize=(12, 8))
     ax = matplotlib.pyplot.axes()
     format_time_axis()
@@ -60,9 +62,9 @@ def add_label_y(label, fontsize=None):
 
 def show_legend(fontsize=None):
     if fontsize is None:
-        matplotlib.pyplot.legend(loc='upper right')
+        matplotlib.pyplot.legend(loc="upper right")
     else:
-        matplotlib.pyplot.legend(fontsize=fontsize, loc='upper right')
+        matplotlib.pyplot.legend(fontsize=fontsize, loc="upper right")
 
 
 def format_time_axis():
@@ -70,10 +72,10 @@ def format_time_axis():
 
     xax = ax.get_xaxis()
     xax.set_major_locator(dates.DayLocator())
-    xax.set_major_formatter(dates.DateFormatter('%b-%d'))
+    xax.set_major_formatter(dates.DateFormatter("%b-%d"))
 
     xax.set_minor_locator(dates.HourLocator(byhour=range(0, 24, 3)))
-    xax.set_minor_formatter(dates.DateFormatter('%H'))
+    xax.set_minor_formatter(dates.DateFormatter("%H"))
 
 
 # PLOTTING FUNCTIONS #######################################
@@ -138,35 +140,34 @@ def plot_fmi_pvlib_mono(data_fmi, data_pvlib):
     data_pvlib["time"] = data_pvlib["time"].dt.tz_convert(finnish_time)
     data_fmi["time"] = data_fmi["time"].dt.tz_convert(finnish_time)
 
-    f, (a0, a1) = matplotlib.pyplot.subplots(1, 2, gridspec_kw={'width_ratios': [3, 1]}, figsize=(12, 6))
+    f, (a0, a1) = matplotlib.pyplot.subplots(1, 2, gridspec_kw={"width_ratios": [3, 1]}, figsize=(12, 6))
 
     # plotting pvlib and fmi data
     a0.plot(data_pvlib["time"], data_pvlib["output"], label="Theoretical clear sky generation", c="#6ec8fa")
 
     # removing leading and trailing power output is zero values from fmi open data based energy generation data
     # Find the index of the first non-zero value
-    start_index = data_fmi['output'].ne(0).idxmax()
+    start_index = data_fmi["output"].ne(0).idxmax()
 
     # Find the index of the last non-zero value
-    end_index = data_fmi['output'].ne(0)[::-1].idxmax()
+    end_index = data_fmi["output"].ne(0)[::-1].idxmax()
 
     # Extract the section of the DataFrame without leading and trailing zeros
     data_fmi = data_fmi.loc[start_index:end_index]
 
-    a0.plot(data_fmi["time"], data_fmi["output"],
-            label="Weather model based generation", c="#303193")
+    a0.plot(data_fmi["time"], data_fmi["output"], label="Weather model based generation", c="#303193")
 
     # adding legend
-    a0.legend(loc='upper right')
+    a0.legend(loc="upper right")
 
-    #reading date from fmi data
+    # reading date from fmi data
     date_for_simulation = data_fmi.index[0].date()
     now = datetime.utcnow()
     timestamp = str(date_for_simulation) + " " + str(now.time())[0:5]
 
     # adding titles for both plots
-    a0.set_title('Power generation "' + config.site_name + "\" " + timestamp + "UTC")
-    a1.set_title('Energy generation')
+    a0.set_title('Power generation "' + config.site_name + '" ' + timestamp + "UTC")
+    a1.set_title("Energy generation")
 
     # plot 0 labels
     a0.set_ylabel("Power(W)")
@@ -176,10 +177,10 @@ def plot_fmi_pvlib_mono(data_fmi, data_pvlib):
     a1.set_ylabel("Energy(kWh)")
 
     # calculating kwh sums for pvlib
-    pvlib_x, pvlib_y = __get_dayily_power_sums(data_pvlib, config.data_resolution) # pvlib resolution can be any
+    pvlib_x, pvlib_y = __get_dayily_power_sums(data_pvlib, config.data_resolution)  # pvlib resolution can be any
 
     # calculating khw sums for fmi
-    fmi_x, fmi_y = __get_dayily_power_sums(data_fmi, 60) # fmi open data only gives 60min resolution data
+    fmi_x, fmi_y = __get_dayily_power_sums(data_fmi, 60)  # fmi open data only gives 60min resolution data
 
     # plotting kwh sums on second plot
     a1.bar(pvlib_x, pvlib_y, color="#6ec8fa")
@@ -187,8 +188,7 @@ def plot_fmi_pvlib_mono(data_fmi, data_pvlib):
 
     # adding simulation runtime as vertical line
     v_line_max = max(max(data_pvlib["output"]), max(data_fmi["output"]))
-    a0.plot([now, now], [0, v_line_max], color="silver", linestyle='--')
-
+    a0.plot([now, now], [0, v_line_max], color="silver", linestyle="--")
 
     # adding xxkWh (xx%) text to second plot
     for i in range(len(fmi_x)):
@@ -239,12 +239,12 @@ def plot_fmi_pvlib_mono(data_fmi, data_pvlib):
     # saving plot as .png -file
 
     timestamp = timestamp.replace(":", "-")
-    savepath = (config.save_directory + config.site_name + "-" + timestamp + ".png")
+    savepath = config.save_directory + config.site_name + "-" + timestamp + ".png"
     matplotlib.pyplot.savefig(savepath)
     print("Simulation plot saved as '" + savepath + "'")
     print("-------------------------------------------------------------------------------------------------------")
 
-    #matplotlib.pyplot.show()
+    # matplotlib.pyplot.show()
 
 
 def __get_dayily_power_sums(data, resolution=config.data_resolution):
