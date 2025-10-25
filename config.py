@@ -9,8 +9,8 @@ Author: TimoSalola (Timo Salola).
 # site name used for plotting and saved file name
 site_name = "output_example"
 save_directory = "output/"
-save_csv = False #value= [True] or [False] this variable toggles csv file saving on or off
-console_print = True #value= [True] or [False] this variable toggles console printing of the full output table on or off
+save_csv = False  # value= [True] or [False] this variable toggles csv file saving on or off
+console_print = True  # value= [True] or [False] this variable toggles console printing of the full output table on or off
 
 #### SIMULATED INSTALLATION PARAMETERS BELOW:
 # coordinates
@@ -36,9 +36,6 @@ wind_speed = 2
 
 # air temp in Celsius, this will be used if temp from fmi open is not used
 air_temp = 20
-
-
-
 
 
 #### OTHER PARAMETERS
@@ -77,6 +74,7 @@ rated_power_helsinki = 21
 
 # functions like this can be used for easily running the code for multiple installations
 def set_params_helsinki():
+    global latitude, longitude, tilt, azimuth, rated_power, module_elevation
     latitude = latitude_helsinki
     longitude = longitude_helsinki
     tilt = tilt_helsinki
@@ -84,7 +82,9 @@ def set_params_helsinki():
     rated_power = rated_power_helsinki
     module_elevation = elevation_helsinki
 
+
 def set_params_kuopio():
+    global latitude, longitude, tilt, azimuth, rated_power, module_elevation
     latitude = latitude_kuopio
     longitude = longitude_kuopio
     tilt = tilt_kuopio

@@ -1,21 +1,21 @@
+#!/usr/bin/env python3
+
 import datetime
-import time
 
 import pandas
+import pandas as pd
+
 import config
 import helpers.irradiance_transpositions
+import helpers.output_estimator
+import helpers.reflection_estimator
 import plotter
-from helpers import solar_irradiance_estimator, astronomical_calculations
-from helpers import reflection_estimator
-from helpers import panel_temperature_estimator
-from helpers import output_estimator
-
-import pandas as pd
+from helpers import panel_temperature_estimator, solar_irradiance_estimator
 
 """
 Main file, contains examples on how to call the functions from other files.
 
-Modify parameters in file config.py in order to change the simulated installation location and other installation 
+Modify parameters in file config.py in order to change the simulated installation location and other installation
 parameters.
 
 full_processing_of_fmi_open_data()
@@ -37,22 +37,24 @@ plot shows power(W) and energy(kWh) values for each day.
 Author: TimoSalola (Timo Salola).
 """
 
+
 def print_full(x: pandas.DataFrame):
     """
     Prints a dataframe without leaving any columns or rows out. Useful for debugging.
     """
 
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.width', 1400)
-    pd.set_option('display.float_format', '{:10,.2f}'.format)
-    pd.set_option('display.max_colwidth', None)
+    pd.set_option("display.max_rows", None)
+    pd.set_option("display.max_columns", None)
+    pd.set_option("display.width", 1400)
+    pd.set_option("display.float_format", "{:10,.2f}".format)
+    pd.set_option("display.max_colwidth", None)
     print(x)
-    pd.reset_option('display.max_rows')
-    pd.reset_option('display.max_columns')
-    pd.reset_option('display.width')
-    pd.reset_option('display.float_format')
-    pd.reset_option('display.max_colwidth')
+    pd.reset_option("display.max_rows")
+    pd.reset_option("display.max_columns")
+    pd.reset_option("display.width")
+    pd.reset_option("display.float_format")
+    pd.reset_option("display.max_colwidth")
+
 
 def full_processing_of_fmi_open_data():
     # date for simulation:
@@ -91,8 +93,6 @@ def full_processing_of_fmi_open_data():
 
 
 def full_processing_of_pvlib_data():
-
-
     # date for simulation:
     today = datetime.date.today()
     date_start = datetime.datetime(today.year, today.month, today.day)
@@ -222,7 +222,7 @@ def combined_processing_of_data():
 
     day_range = 3
 
-    print("Simulating clear sky and weather model based PV generation for the next " + str(day_range) +" days.")
+    print("Simulating clear sky and weather model based PV generation for the next " + str(day_range) + " days.")
     # fetching fmi data and generating solar pv output df
 
     data_fmi = get_fmi_data(day_range)
@@ -230,7 +230,6 @@ def combined_processing_of_data():
     # generating pvlib irradiance values and clear sky pv dataframe, passing fmi data to pvlib generator functions
     # for wind and air temp transfer
     data_pvlib = get_pvlib_data(day_range, data_fmi)
-
 
     # this line prints the full results into console/terminal
 
@@ -242,26 +241,30 @@ def combined_processing_of_data():
         print_full(data_fmi)
 
         print("-----Columns explained-----")
-        print(
-            "[index(Time)]: Meteorological time. In meteorology, timestamp for 13:00 represents the time 12:00-13:00.")
+        print("[index(Time)]: Meteorological time. In meteorology, timestamp for 13:00 represents the time 12:00-13:00.")
         print("[time]: This is time index shifted by 30min. More useful than the meteorological time for physics.")
-        print("[dni, dhi, ghi]: Irradiance types, these can be used for estimating radiation from direct radiation,"
-              " atmosphere scattered radiation and ground reflected radiation.")
-        print("[albedo]: Ground reflectivity near installation. This is retrieved from fmi open data service. Should be"
-              "between 0 and 1.")
+        print(
+            "[dni, dhi, ghi]: Irradiance types, these can be used for estimating radiation from direct radiation,"
+            " atmosphere scattered radiation and ground reflected radiation."
+        )
+        print("[albedo]: Ground reflectivity near installation. This is retrieved from fmi open data service. Should bebetween 0 and 1.")
         print("[T]: Air temperature at 2m.")
         print("[wind]: Wind speed at 2m.")
         print("[cloud_cover]: Cloudiness percentage, between 0 and 100.")
-        print("[dni_poa, dhi_poa, ghi_poa]: Transpositions of dni, dhi and ghi to the plane of array(POA). These values"
-              " are always positive and lower than their non _poa counterparts.")
-        print("[poa]: Sum of dni_poa, dhi_poa, ghi_poa. Represents the amount of radiation reaching the panel surface."
-              " This does not account for panel reflectivity.")
-        print("[dni_rc, dhi_rc, ghi_rc]: Transpositions of radiation types with reflection corrections. These are lower"
-              "than their '_poa' counterparts.")
-        print("[poa_ref_cor]: Sum of dni_rc, dhi_rc and ghi_rc. This represents the amount of radiation absorbed by the"
-              " solar panels.")
         print(
-            "[module_temp]: Estimated value for solar panel temperature. Based on air temp, wind speed and radiation.")
+            "[dni_poa, dhi_poa, ghi_poa]: Transpositions of dni, dhi and ghi to the plane of array(POA). These values"
+            " are always positive and lower than their non _poa counterparts."
+        )
+        print(
+            "[poa]: Sum of dni_poa, dhi_poa, ghi_poa. Represents the amount of radiation reaching the panel surface."
+            " This does not account for panel reflectivity."
+        )
+        print(
+            "[dni_rc, dhi_rc, ghi_rc]: Transpositions of radiation types with reflection corrections. These are lower"
+            "than their '_poa' counterparts."
+        )
+        print("[poa_ref_cor]: Sum of dni_rc, dhi_rc and ghi_rc. This represents the amount of radiation absorbed by the solar panels.")
+        print("[module_temp]: Estimated value for solar panel temperature. Based on air temp, wind speed and radiation.")
         print("[output]: System output in watts.")
         print("Note that all values before [output] are for a simulated theoretical 1m² panel.")
         print("-------------------------------------------------------------------------------------------------------")
@@ -270,15 +273,13 @@ def combined_processing_of_data():
     if config.save_csv:
         print("-------------------------------------------------------------------------------------------------------")
         print("Output table csv exporting is turned on in the config.py file")
-        filename = config.save_directory+ config.site_name + str(datetime.date.today()) + ".csv"
-        data_fmi.to_csv(filename,float_format='%.2f')
+        filename = config.save_directory + config.site_name + str(datetime.date.today()) + ".csv"
+        data_fmi.to_csv(filename, float_format="%.2f")
         print("Saved csv as: " + filename)
         print("-------------------------------------------------------------------------------------------------------")
-
 
     plotter.plot_fmi_pvlib_mono(data_fmi, data_pvlib)
 
 
-
-combined_processing_of_data()
-
+if __name__ == "__main__":
+    combined_processing_of_data()

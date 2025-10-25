@@ -9,14 +9,15 @@ FMIopen values are weather forecast-based, and they can be used to estimate actu
 Author: TimoSalola (Timo Salola).
 """
 
-
 import sys
+from datetime import datetime, timedelta
+
 import pandas
 import pandas as pd
 from pvlib import location
-from datetime import timedelta, datetime
-from helpers import _meps_data_loader
+
 import config
+from helpers import _meps_data_loader
 
 """
 Solar irradiance dataframe creation functions are included in this file.
@@ -25,7 +26,7 @@ Currently supports pvlib simulations and fmi open data
 """
 
 
-def get_solar_irradiance(date_start: datetime, day_count:int , model="pvlib")-> pandas.DataFrame:
+def get_solar_irradiance(date_start: datetime, day_count: int, model="pvlib") -> pandas.DataFrame:
     """
     Returns a dataframe with datetime, ghi, dni and dhi values.
     Example output:
@@ -42,11 +43,11 @@ def get_solar_irradiance(date_start: datetime, day_count:int , model="pvlib")-> 
     :param model: string with model name, uses pvlib by default
     :return:
     """
-    #print("Generating dataframe with ghi, dni, dhi using " + str(model) + ".")
+    # print("Generating dataframe with ghi, dni, dhi using " + str(model) + ".")
 
     # creating interval end variable
     date_end = date_start + timedelta(days=day_count, minutes=-1)
-    #print("start date:" + str(date_start) + " - " + str(date_end))
+    # print("start date:" + str(date_start) + " - " + str(date_end))
 
     match model:
         case "pvlib" | "pvlib_ineichen" | "inechen":
@@ -56,19 +57,17 @@ def get_solar_irradiance(date_start: datetime, day_count:int , model="pvlib")-> 
         case "meps" | "fmi_open" | "fmiopen":
             return __get_irradiance_fmiopen(date_start, date_end)
 
-
     # none of the cases activated:
-    print("Error: model \"" + model + "\" not programmed into the system. Check file solar_irradiance_estimator.py")
+    print(f"Error: model {model} not programmed into the system. Check file solar_irradiance_estimator.py")
     sys.exit(1)
 
 
-
-def __get_irradiance_fmiopen(date_start: datetime, date_end: datetime)-> pandas.DataFrame:
+def __get_irradiance_fmiopen(date_start: datetime, date_end: datetime) -> pandas.DataFrame:
     latlon = str(config.latitude) + "," + str(config.longitude)
     return _meps_data_loader.collect_fmi_opendata(latlon, date_start, date_end)
 
 
-def __get_irradiance_pvlib(date_start: datetime, date_end: datetime, mod="ineichen")-> pandas.DataFrame:
+def __get_irradiance_pvlib(date_start: datetime, date_end: datetime, mod="ineichen") -> pandas.DataFrame:
     """
     PVlib based clear sky irradiance modeling
     :param date: Datetime object containing a date
@@ -83,12 +82,14 @@ def __get_irradiance_pvlib(date_start: datetime, date_end: datetime, mod="ineich
     measurement_frequency = str(config.data_resolution) + "min"
 
     # measurement count, 1440 minutes per day
-    measurement_count = 1440 / config.data_resolution
+    # measurement_count = 1440 / config.data_resolution # not used
 
-    times = pd.date_range(start=date_start,
-                          end=date_end,  # year + day for which the irradiance is calculated
-                          freq=measurement_frequency,  # take measurement every 60 minutes
-                          tz=site.tz)  # timezone
+    times = pd.date_range(
+        start=date_start,
+        end=date_end,  # year + day for which the irradiance is calculated
+        freq=measurement_frequency,  # take measurement every 60 minutes
+        tz=site.tz,
+    )  # timezone
 
     # creating a clear sky and solar position entities
     clearsky = site.get_clearsky(times, model=mod)

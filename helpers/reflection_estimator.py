@@ -10,13 +10,13 @@ Author: TimoSalola (Timo Salola).
 
 import math
 from datetime import datetime
+
 import numpy
 import pandas
 import pandas as pd
 
-from helpers import astronomical_calculations
 import config
-
+from helpers import astronomical_calculations
 
 # panel reflectance constant, empirical value. Solar panels with better optical coatings would have a lower value where
 # as uncoated panels would have a higher value. Dust on panels increases reflectance_constant.
@@ -24,7 +24,9 @@ import config
 reflectance_constant = 0.159
 
 
-def components_to_corrected_poa(DNI_component: float, DHI_component: float, GHI_component: float, dt: pandas.DataFrame)-> pandas.DataFrame:
+def components_to_corrected_poa(
+    DNI_component: float, DHI_component: float, GHI_component: float, dt: pandas.DataFrame
+) -> pandas.DataFrame:
     """
     Takes dni, dhi and ghi components of a solar panel projected irradiance and computes how much of the radiation is
     absorbed by the solar panels, in opposed to reflected away.
@@ -44,8 +46,9 @@ def components_to_corrected_poa(DNI_component: float, DHI_component: float, GHI_
     ghi_reflected = __ghi_reflected()
 
     # POA_reflection_corrected or radiation absorbed by the solar panel.
-    POA_reflection_corrected = ((1 - dni_reflected) * DNI_component + (1 - dhi_reflected) * DHI_component +
-                                (1 - ghi_reflected) * GHI_component)
+    POA_reflection_corrected = (
+        (1 - dni_reflected) * DNI_component + (1 - dhi_reflected) * DHI_component + (1 - ghi_reflected) * GHI_component
+    )
 
     return POA_reflection_corrected
 
@@ -57,7 +60,7 @@ def add_reflection_corrected_poa_to_df(df: pandas.DataFrame) -> pandas.DataFrame
     :return:
     """
 
-    df["poa_ref_cor"] = df["dni_rc"]+ df["dhi_rc"]+ df["ghi_rc"]
+    df["poa_ref_cor"] = df["dni_rc"] + df["dhi_rc"] + df["ghi_rc"]
 
     # print("Adding reflection corrected POA to dataframe")
 
@@ -68,14 +71,14 @@ def add_reflection_corrected_poa_to_df(df: pandas.DataFrame) -> pandas.DataFrame
         return components_to_corrected_poa(df["dni_poa"], df["dhi_poa"], df["ghi_poa"], df["time"])
 
     # applying helper function to dataset and storing result as a new column
-    #df["poa_ref_cor"] = df.apply(helper_components_to_corrected_poa, axis=1)
+    # df["poa_ref_cor"] = df.apply(helper_components_to_corrected_poa, axis=1)
 
     # print("Reflection corrected POA values added.")
 
     return df
 
 
-def add_reflection_corrected_poa_components_to_df(df: pandas.DataFrame)-> pandas.DataFrame:
+def add_reflection_corrected_poa_components_to_df(df: pandas.DataFrame) -> pandas.DataFrame:
     def helper_add_dni_ref(df):
         #  (1-alpha_BN)*BTN
         return math.fabs(1 - __dni_reflected(df["time"])) * df["dni_poa"]
@@ -97,17 +100,17 @@ def add_reflection_corrected_poa_components_to_df(df: pandas.DataFrame)-> pandas
     dhi_reflection_value = __dhi_reflected()
     ghi_reflection_value = __ghi_reflected()
 
-    #df["AOI"] = astronomical_calculations.get_solar_angle_of_incidence_fast(df.index)
-    df["dni_rc"] = (1-__dni_reflected(df.index))*df["dni_poa"]
-    df["dhi_rc"] = (1-dhi_reflection_value)*df["dhi_poa"]
-    df["ghi_rc"] = (1-ghi_reflection_value)*df["ghi_poa"]
+    # df["AOI"] = astronomical_calculations.get_solar_angle_of_incidence_fast(df.index)
+    df["dni_rc"] = (1 - __dni_reflected(df.index)) * df["dni_poa"]
+    df["dhi_rc"] = (1 - dhi_reflection_value) * df["dhi_poa"]
+    df["ghi_rc"] = (1 - ghi_reflection_value) * df["ghi_poa"]
 
-
-    #print_full(df)
+    # print_full(df)
 
     return df
 
-def __dni_reflected(dt: datetime)-> float:
+
+def __dni_reflected(dt: datetime) -> float:
     """
     Computes a constant in range [0,1] which represents how much of the direct irradiance is reflected from panel
     surfaces.
@@ -132,7 +135,7 @@ def __dni_reflected(dt: datetime)-> float:
     return dni_reflected
 
 
-def __ghi_reflected()-> float:
+def __ghi_reflected() -> float:
     """
     Computes a constant in range [0,1] which represents how much of ground reflected irradiation is reflected away from
     solar panel surfaces. Note that this is constant for an installation.
@@ -152,15 +155,15 @@ def __ghi_reflected()-> float:
     # equation parts, part 1 is used 2 times
     part1 = math.sin(panel_tilt) + (panel_tilt - math.sin(panel_tilt)) / (1.0 - math.cos(panel_tilt))
 
-    part2 = c1 * part1 + c2 * (part1 ** 2.0)
+    part2 = c1 * part1 + c2 * (part1**2.0)
     part3 = (-1.0 / a_r) * part2
 
-    ghi_reflected = math.e ** part3
+    ghi_reflected = math.e**part3
 
     return ghi_reflected
 
 
-def __dhi_reflected()-> float:
+def __dhi_reflected() -> float:
     """
     Computes a constant in range [0,1] which represents how much of atmospheric diffuse light is reflected away from
     solar panel surfaces. Constant for an installation. Almost a 1 to 1 copy of __ghi_reflected except
@@ -180,10 +183,10 @@ def __dhi_reflected()-> float:
     # equation parts, part 1 is used 2 times
     part1 = math.sin(panel_tilt) + (pi - panel_tilt - math.sin(panel_tilt)) / (1.0 + math.cos(panel_tilt))
 
-    part2 = c1 * part1 + c2 * (part1 ** 2.0)
+    part2 = c1 * part1 + c2 * (part1**2.0)
     part3 = (-1.0 / a_r) * part2
 
-    dhi_reflected = math.e ** part3
+    dhi_reflected = math.e**part3
 
     return dhi_reflected
 
@@ -193,14 +196,14 @@ def print_full(x: pandas.DataFrame):
     Prints a dataframe without leaving any columns or rows out. Useful for debugging.
     """
 
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.width', 1400)
-    pd.set_option('display.float_format', '{:10,.2f}'.format)
-    pd.set_option('display.max_colwidth', None)
+    pd.set_option("display.max_rows", None)
+    pd.set_option("display.max_columns", None)
+    pd.set_option("display.width", 1400)
+    pd.set_option("display.float_format", "{:10,.2f}".format)
+    pd.set_option("display.max_colwidth", None)
     print(x)
-    pd.reset_option('display.max_rows')
-    pd.reset_option('display.max_columns')
-    pd.reset_option('display.width')
-    pd.reset_option('display.float_format')
-    pd.reset_option('display.max_colwidth')
+    pd.reset_option("display.max_rows")
+    pd.reset_option("display.max_columns")
+    pd.reset_option("display.width")
+    pd.reset_option("display.float_format")
+    pd.reset_option("display.max_colwidth")
