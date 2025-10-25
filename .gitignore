@@ -1,0 +1,4 @@
+# Avoid pushing venv or caches to git
+.venv
+**/__pycache__
+output

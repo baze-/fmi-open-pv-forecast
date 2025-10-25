@@ -1,0 +1,28 @@
+[project]
+name = "fmi-open-pv-forecast"
+version = "0.1.0"
+authors = [{name = "Timo Salola"}]
+requires-python = ">=3.12"
+dependencies = [
+    "pandas>=2.2.2",
+    "matplotlib>=3.10.7",
+    "numpy>=2.3.4",
+    "pvlib>=0.13.1",
+    "fmiopendata>=0.5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.14.2",  # Use ruff for linting and formatting
+]
+
+[project.scripts]
+# After `poetry install` you can run `fmi-open-pv-forecast` from the command line instead of `python main.py`.
+fmi-open-pv-forecast = "main:combined_processing_of_data"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+packages = [{include = "helpers"}]

@@ -1,6 +1,6 @@
 
 # FMI Open PV Forecast
-**Last update 2024-11-28**
+**Last update 2025-10-25**
 
 ## Description
 Python code for predicting the output from a solar PV installation at given coordinates and panel installation angles. 
@@ -53,6 +53,17 @@ not implemented.
 
 Further validification and model testing has been planned for the upcoming months.
 
+## Quick start quide
+
+1. run `./.envrc` (or allow DIRENV to do it) to setup Python venv
+2. run `poetry install` to install dependencies
+3. run `./main.py`
+
+### For developers
+
+- Run `poetry install --extras dev` to install dev dependencies (like linting tools)
+- Run `ruff check` to check code linting before git PR
+
 ## Software requirements
 In order to run the program, you need a python environment with python 3.11 or newer and the following packages:
 * fmiopendata >=0.4.3
@@ -63,6 +74,10 @@ In order to run the program, you need a python environment with python 3.11 or n
 
 A python virtual environment (venv) or similar is recommended.
 
+Simplest way to accomplish this is to run `./.envrc`  (or allow DIRENV to run it if using DIRENV).
+That script will automatically create Python venv for you and install poetry dependency management tool.
+
+Then just run `poetry install` to install all dependencies.
 
 
 
@@ -147,6 +162,11 @@ I am using bifacial panels or panels with multiple installation angles, and the 
 
 Adding support for bifacial and mixed angle installations would be fairly easy, and may be added in the future if requested. Reach out to us and we'll consider adding support.
 
+
+### Changes 2025-10-25:
+- Added ruff linting for Python code.
+- Added automatic venv setup.
+- Added dependency management with Poetry.
 
 
 ### Changes 2024-10-09:
