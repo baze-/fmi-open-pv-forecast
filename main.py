@@ -273,12 +273,29 @@ def combined_processing_of_data():
     if config.save_csv:
         print("-------------------------------------------------------------------------------------------------------")
         print("Output table csv exporting is turned on in the config.py file")
-        filename = config.save_directory + config.site_name + str(datetime.date.today()) + ".csv"
+        filename = config.save_directory + config.site_name + "-" + str(datetime.date.today()) + ".csv"
         data_fmi.to_csv(filename, float_format="%.2f")
         print("Saved csv as: " + filename)
         print("-------------------------------------------------------------------------------------------------------")
 
-    plotter.plot_fmi_pvlib_mono(data_fmi, data_pvlib)
+    # Save result in json format
+    if config.save_json:
+        print("-------------------------------------------------------------------------------------------------------")
+        print("json exporting turned on in the config.py file")
+        filename = config.save_directory + config.site_name + "-" + str(datetime.date.today()) + "-forecasted_production.json"
+        data_fmi.to_json(filename, orient="records", date_format="iso", indent=4)
+        print("Saved weather model based production forecast json as: " + filename)
+
+        filename = config.save_directory + config.site_name + "-" + str(datetime.date.today()) + "-theoretical_production.json"
+        data_pvlib.to_json(filename, orient="records", date_format="iso", indent=4)
+        print("Saved theoretical blue sky generation json as: " + filename)
+        print("-------------------------------------------------------------------------------------------------------")
+
+    # plotting both fmi and pvlib data
+    if config.save_plot:
+        print("-------------------------------------------------------------------------------------------------------")
+        print("Plots exporting turned on in the config.py file")
+        plotter.plot_fmi_pvlib_mono(data_fmi, data_pvlib)
 
 
 if __name__ == "__main__":
