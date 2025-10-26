@@ -18,8 +18,8 @@ import pandas
 import pandas as pd
 import pvlib.irradiance
 
-import config
 import helpers.astronomical_calculations as astronomical_calculations
+from config import Config
 
 
 def print_full(x: pandas.DataFrame):
@@ -40,7 +40,7 @@ def print_full(x: pandas.DataFrame):
     pd.reset_option("display.max_colwidth")
 
 
-def irradiance_df_to_poa_df(irradiance_df: pandas.DataFrame) -> pandas.DataFrame:
+def irradiance_df_to_poa_df(config: Config, irradiance_df: pandas.DataFrame) -> pandas.DataFrame:
     """
     This function takes an irradiance dataframe as input. This dataframe should contain ghi, dni and dhi irradiance values
     These values are then projected to the panel surfaces either using simple geometry or more complex equations.
@@ -50,14 +50,18 @@ def irradiance_df_to_poa_df(irradiance_df: pandas.DataFrame) -> pandas.DataFrame
     """
 
     # handling dni and dhi
-    irradiance_df["dni_poa"] = __project_dni_to_panel_surface_using_time_fast(irradiance_df["dni"], irradiance_df.index)
-    irradiance_df["dhi_poa"] = __project_dhi_to_panel_surface_perez_fast(irradiance_df.index, irradiance_df["dhi"], irradiance_df["dni"])
+    irradiance_df["dni_poa"] = __project_dni_to_panel_surface_using_time_fast(
+        config=config, dni=irradiance_df["dni"], dt=irradiance_df.index
+    )
+    irradiance_df["dhi_poa"] = __project_dhi_to_panel_surface_perez_fast(
+        config, irradiance_df.index, irradiance_df["dhi"], irradiance_df["dni"]
+    )
 
     # and finally ghi
     if "albedo" in irradiance_df.columns:
-        irradiance_df["ghi_poa"] = __project_ghi_to_panel_surface(irradiance_df["ghi"], irradiance_df["albedo"])
+        irradiance_df["ghi_poa"] = __project_ghi_to_panel_surface(irradiance_df["ghi"], irradiance_df["albedo"], config.tilt)
     else:
-        irradiance_df["ghi_poa"] = __project_ghi_to_panel_surface(irradiance_df["ghi"])
+        irradiance_df["ghi_poa"] = __project_ghi_to_panel_surface(irradiance_df["ghi"], config.albedo, config.tilt)
 
     # adding the sum of projections to df as poa
     irradiance_df["poa"] = irradiance_df["dhi_poa"] + irradiance_df["dni_poa"] + irradiance_df["ghi_poa"]
@@ -72,7 +76,7 @@ same result.
 """
 
 
-def __project_dni_to_panel_surface_using_time_fast(dni: float, dt: datetime) -> float:
+def __project_dni_to_panel_surface_using_time_fast(config: Config, dni: float, dt: datetime) -> float:
     """
     :param DNI: Direct sunlight irradiance component in W
     :param dt: Time of simulation
@@ -81,7 +85,7 @@ def __project_dni_to_panel_surface_using_time_fast(dni: float, dt: datetime) -> 
     This version of the function is fairly well optimized.
     """
 
-    angle_of_incidence = astronomical_calculations.get_solar_angle_of_incidence_fast(dt)
+    angle_of_incidence = astronomical_calculations.get_solar_angle_of_incidence_fast(config, dt)
 
     output = numpy.abs(__project_dni_to_panel_surface_using_angle(dni, angle_of_incidence))
 
@@ -100,7 +104,7 @@ def __project_dni_to_panel_surface_using_angle(dni: float, angle_of_incidence: f
     return dni * numpy.cos(numpy.radians(angle_of_incidence))
 
 
-def __project_dhi_to_panel_surface(dhi: float) -> float:
+def __project_dhi_to_panel_surface(config: Config, dhi: float) -> float:
     """
     Uses atmosphere scattered sunlight and solar panel angles to estimate how much of the scattered light is radiated
     towards solar panel surfaces.
@@ -110,7 +114,7 @@ def __project_dhi_to_panel_surface(dhi: float) -> float:
     return dhi * ((1.0 + math.cos(numpy.radians(config.tilt))) / 2.0)
 
 
-def __project_dhi_to_panel_surface_perez_fast(time: datetime, dhi: float, dni: float) -> float:
+def __project_dhi_to_panel_surface_perez_fast(config: Config, time: datetime, dhi: float, dni: float) -> float:
     """
     Alternative dhi model,
     Calculated internally by pvlib, pvlib documentation at:
@@ -128,10 +132,10 @@ def __project_dhi_to_panel_surface_perez_fast(time: datetime, dhi: float, dni: f
     surface_azimuth = config.azimuth
 
     # sun angles
-    solar_azimuth, solar_zenith = astronomical_calculations.get_solar_azimuth_zenit_fast(time)
+    solar_azimuth, solar_zenith = astronomical_calculations.get_solar_azimuth_zenit_fast(config, time)
 
     # air mass
-    airmass = astronomical_calculations.get_air_mass_fast(time)
+    airmass = astronomical_calculations.get_air_mass_fast(config, time)
 
     dhi_perez = pvlib.irradiance.perez(
         surface_tilt,
@@ -148,7 +152,7 @@ def __project_dhi_to_panel_surface_perez_fast(time: datetime, dhi: float, dni: f
     return dhi_perez
 
 
-def __project_ghi_to_panel_surface(ghi: float, albedo=config.albedo) -> float:
+def __project_ghi_to_panel_surface(ghi: float, albedo: float, tilt: float) -> float:
     """
     Equation from
     https://pvpmc.sandia.gov/modeling-guide/1-weather-design-inputs/plane-of-array-poa-irradiance/calculating-poa-irradiance/poa-ground-reflected/
@@ -158,6 +162,6 @@ def __project_ghi_to_panel_surface(ghi: float, albedo=config.albedo) -> float:
     :param ghi: Ground reflected solar irradiance.
     :return: Ground reflected solar irradiance hitting the solar panel surface.
     """
-    step1 = (1.0 - math.cos(numpy.radians(config.tilt))) / 2
+    step1 = (1.0 - math.cos(numpy.radians(tilt))) / 2
     step2 = ghi * albedo * step1
     return step2  # ghi * config.albedo * ((1.0 - math.cos(numpy.radians(config.tilt))) / 2.0)

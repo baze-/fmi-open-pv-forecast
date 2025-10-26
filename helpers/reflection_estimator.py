@@ -15,7 +15,7 @@ import numpy
 import pandas
 import pandas as pd
 
-import config
+from config import Config
 from helpers import astronomical_calculations
 
 # panel reflectance constant, empirical value. Solar panels with better optical coatings would have a lower value where
@@ -25,7 +25,7 @@ reflectance_constant = 0.159
 
 
 def components_to_corrected_poa(
-    DNI_component: float, DHI_component: float, GHI_component: float, dt: pandas.DataFrame
+    config: Config, DNI_component: float, DHI_component: float, GHI_component: float, dt: pandas.DataFrame
 ) -> pandas.DataFrame:
     """
     Takes dni, dhi and ghi components of a solar panel projected irradiance and computes how much of the radiation is
@@ -38,12 +38,12 @@ def components_to_corrected_poa(
     """
 
     # direct sunlight reflection variable, has to be computed multiple times.
-    dni_reflected = __dni_reflected(dt)
+    dni_reflected = __dni_reflected(config, dt)
 
     # These values do not have to be recomputed every single time as they are installation-specific, and they do not
     # even take time as an input. This could be optimized if needed.
-    dhi_reflected = __dhi_reflected()
-    ghi_reflected = __ghi_reflected()
+    dhi_reflected = __dhi_reflected(config.tilt)
+    ghi_reflected = __ghi_reflected(config.tilt)
 
     # POA_reflection_corrected or radiation absorbed by the solar panel.
     POA_reflection_corrected = (
@@ -53,7 +53,7 @@ def components_to_corrected_poa(
     return POA_reflection_corrected
 
 
-def add_reflection_corrected_poa_to_df(df: pandas.DataFrame) -> pandas.DataFrame:
+def add_reflection_corrected_poa_to_df(df: pandas.DataFrame, tilt: float) -> pandas.DataFrame:
     """
     Adds reflection corrected POA value to dataframe with name "poa_ref_cor"
     :param df:
@@ -68,7 +68,7 @@ def add_reflection_corrected_poa_to_df(df: pandas.DataFrame) -> pandas.DataFrame
 
     # helper function
     def helper_components_to_corrected_poa(df: pandas.DataFrame) -> pandas.DataFrame:
-        return components_to_corrected_poa(df["dni_poa"], df["dhi_poa"], df["ghi_poa"], df["time"])
+        return components_to_corrected_poa(df["dni_poa"], df["dhi_poa"], df["ghi_poa"], tilt, df["time"])
 
     # applying helper function to dataset and storing result as a new column
     # df["poa_ref_cor"] = df.apply(helper_components_to_corrected_poa, axis=1)
@@ -78,18 +78,18 @@ def add_reflection_corrected_poa_to_df(df: pandas.DataFrame) -> pandas.DataFrame
     return df
 
 
-def add_reflection_corrected_poa_components_to_df(df: pandas.DataFrame) -> pandas.DataFrame:
+def add_reflection_corrected_poa_components_to_df(config: Config, df: pandas.DataFrame) -> pandas.DataFrame:
     def helper_add_dni_ref(df):
         #  (1-alpha_BN)*BTN
         return math.fabs(1 - __dni_reflected(df["time"])) * df["dni_poa"]
 
-    def helper_add_dhi_ref(df):
+    def helper_add_dhi_ref(df, tilt: float):
         # (1-alpha_d)*DT
-        return math.fabs(1 - __dhi_reflected()) * df["dhi_poa"]
+        return math.fabs(1 - __dhi_reflected(tilt)) * df["dhi_poa"]
 
-    def helper_add_ghi_ref(df):
+    def helper_add_ghi_ref(df, tilt: float):
         # (1-alpha_dg)*DTg
-        return math.fabs(1 - __ghi_reflected()) * df["ghi_poa"]
+        return math.fabs(1 - __ghi_reflected(tilt)) * df["ghi_poa"]
 
     """
     BTN = dni_poa
@@ -97,11 +97,11 @@ def add_reflection_corrected_poa_components_to_df(df: pandas.DataFrame) -> panda
     DT = dhi_poa
     """
 
-    dhi_reflection_value = __dhi_reflected()
-    ghi_reflection_value = __ghi_reflected()
+    dhi_reflection_value = __dhi_reflected(config.tilt)
+    ghi_reflection_value = __ghi_reflected(config.tilt)
 
     # df["AOI"] = astronomical_calculations.get_solar_angle_of_incidence_fast(df.index)
-    df["dni_rc"] = (1 - __dni_reflected(df.index)) * df["dni_poa"]
+    df["dni_rc"] = (1 - __dni_reflected(config, df.index)) * df["dni_poa"]
     df["dhi_rc"] = (1 - dhi_reflection_value) * df["dhi_poa"]
     df["ghi_rc"] = (1 - ghi_reflection_value) * df["ghi_poa"]
 
@@ -110,7 +110,7 @@ def add_reflection_corrected_poa_components_to_df(df: pandas.DataFrame) -> panda
     return df
 
 
-def __dni_reflected(dt: datetime) -> float:
+def __dni_reflected(config: Config, dt: datetime) -> float:
     """
     Computes a constant in range [0,1] which represents how much of the direct irradiance is reflected from panel
     surfaces.
@@ -122,7 +122,7 @@ def __dni_reflected(dt: datetime) -> float:
 
     a_r = reflectance_constant
 
-    AOI = astronomical_calculations.get_solar_angle_of_incidence_fast(dt)
+    AOI = astronomical_calculations.get_solar_angle_of_incidence_fast(config, dt)
 
     # upper section of the fraction equation
     upper_fraction = math.e ** (-numpy.cos(numpy.radians(AOI)) / a_r) - math.e ** (-1.0 / a_r)
@@ -135,7 +135,7 @@ def __dni_reflected(dt: datetime) -> float:
     return dni_reflected
 
 
-def __ghi_reflected() -> float:
+def __ghi_reflected(tilt: float) -> float:
     """
     Computes a constant in range [0,1] which represents how much of ground reflected irradiation is reflected away from
     solar panel surfaces. Note that this is constant for an installation.
@@ -150,7 +150,7 @@ def __ghi_reflected() -> float:
 
     c2 = -0.074
     a_r = reflectance_constant
-    panel_tilt = numpy.radians(config.tilt)  # theta_T
+    panel_tilt = numpy.radians(tilt)  # theta_T
 
     # equation parts, part 1 is used 2 times
     part1 = math.sin(panel_tilt) + (panel_tilt - math.sin(panel_tilt)) / (1.0 - math.cos(panel_tilt))
@@ -163,7 +163,7 @@ def __ghi_reflected() -> float:
     return ghi_reflected
 
 
-def __dhi_reflected() -> float:
+def __dhi_reflected(tilt: float) -> float:
     """
     Computes a constant in range [0,1] which represents how much of atmospheric diffuse light is reflected away from
     solar panel surfaces. Constant for an installation. Almost a 1 to 1 copy of __ghi_reflected except
@@ -177,7 +177,7 @@ def __dhi_reflected() -> float:
     c1 = 4.0 / (math.pi * 3.0)
     c2 = -0.074
     a_r = reflectance_constant
-    panel_tilt = numpy.radians(config.tilt)  # theta_T
+    panel_tilt = numpy.radians(tilt)  # theta_T
     pi = math.pi
 
     # equation parts, part 1 is used 2 times

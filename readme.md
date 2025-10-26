@@ -163,12 +163,6 @@ I am using bifacial panels or panels with multiple installation angles, and the 
 Adding support for bifacial and mixed angle installations would be fairly easy, and may be added in the future if requested. Reach out to us and we'll consider adding support.
 
 
-### Changes 2025-10-25:
-- Added ruff linting for Python code.
-- Added automatic venv setup.
-- Added dependency management with Poetry.
-
-
 ### Changes 2024-10-09:
 - Initial open source publication.
 
@@ -179,6 +173,16 @@ Adding support for bifacial and mixed angle installations would be fairly easy, 
 This way some testing functions can be left in the program for advanced users without making main.py more complicated
 than it has to be.
 - Measured runtimes for every part of the program. Program runtime appears to now be defined by the speed of matplotlib and FMI open data.
+
+### Changes 2025-10-25:
+- Added ruff linting for Python code.
+- Added automatic venv setup.
+- Added dependency management with Poetry.
+- Add local caching of FMI data. (Just to prevent repeatedly loading same dataset again and again.)
+
+### Changes 2025-10-26:
+- Added `invoke` to help linting code. (run `invoke lint` to make sure decent coding style used.)
+- Refactored global variables away (config) and made passing all needed variables to functions explicit
 
 
 ### TODO:

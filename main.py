@@ -5,11 +5,11 @@ import datetime
 import pandas
 import pandas as pd
 
-import config
 import helpers.irradiance_transpositions
 import helpers.output_estimator
 import helpers.reflection_estimator
 import plotter
+from config import Config
 from helpers import panel_temperature_estimator, solar_irradiance_estimator
 
 """
@@ -56,28 +56,28 @@ def print_full(x: pandas.DataFrame):
     pd.reset_option("display.max_colwidth")
 
 
-def full_processing_of_fmi_open_data():
+def full_processing_of_fmi_open_data(config: Config):
     # date for simulation:
     today = datetime.date.today()
     date_start = datetime.datetime(today.year, today.month, today.day)
 
     # step 1. simulate irradiance components dni, dhi, ghi:
-    data = solar_irradiance_estimator.get_solar_irradiance(date_start, day_count=3, model="fmiopen")
+    data = solar_irradiance_estimator.get_solar_irradiance(config, date_start, day_count=3, model="fmiopen")
 
     # step 2. project irradiance components to plane of array:
-    data = helpers.irradiance_transpositions.irradiance_df_to_poa_df(data)
+    data = helpers.irradiance_transpositions.irradiance_df_to_poa_df(config, data)
 
     # step 3. simulate how much of irradiance components is absorbed:
-    data = helpers.reflection_estimator.add_reflection_corrected_poa_components_to_df(data)
+    data = helpers.reflection_estimator.add_reflection_corrected_poa_components_to_df(config, data)
 
     # step 4. compute sum of reflection-corrected components:
-    data = helpers.reflection_estimator.add_reflection_corrected_poa_to_df(data)
+    data = helpers.reflection_estimator.add_reflection_corrected_poa_to_df(data, config.tilt)
 
     # step 5. estimate panel temperature based on wind speed, air temperature and absorbed radiation
-    data = helpers.panel_temperature_estimator.add_estimated_panel_temperature(data)
+    data = helpers.panel_temperature_estimator.add_estimated_panel_temperature(data, config.module_elevation)
 
     # step 6. estimate power output
-    data = helpers.output_estimator.add_output_to_df(data)
+    data = helpers.output_estimator.add_output_to_df(config, data)
 
     # printing and plotting data
     print_full(data)
@@ -87,36 +87,36 @@ def full_processing_of_fmi_open_data():
     plotter.add_label_y("Output(W)")
     plotter.add_title("Simulated solar PV system output")
     plotter.plot_curve(data["time"], data["output"], label="Output(W)")
-    plotter.plot_kwh_labels(data)
+    plotter.plot_kwh_labels(data, config.data_resolution)
     plotter.show_legend()
     plotter.show_plot()
 
 
-def full_processing_of_pvlib_data():
+def full_processing_of_pvlib_data(config: Config):
     # date for simulation:
     today = datetime.date.today()
     date_start = datetime.datetime(today.year, today.month, today.day)
 
     # step 1. simulate irradiance components dni, dhi, ghi:
-    data = solar_irradiance_estimator.get_solar_irradiance(date_start, day_count=3, model="pvlib")
+    data = solar_irradiance_estimator.get_solar_irradiance(config, date_start, day_count=3, model="pvlib")
 
     # step 2. project irradiance components to plane of array:
-    data = helpers.irradiance_transpositions.irradiance_df_to_poa_df(data)
+    data = helpers.irradiance_transpositions.irradiance_df_to_poa_df(config, data)
 
     # step 3. simulate how much of irradiance components is absorbed:
-    data = helpers.reflection_estimator.add_reflection_corrected_poa_components_to_df(data)
+    data = helpers.reflection_estimator.add_reflection_corrected_poa_components_to_df(config, data)
 
     # step 4. compute sum of reflection-corrected components:
-    data = helpers.reflection_estimator.add_reflection_corrected_poa_to_df(data)
+    data = helpers.reflection_estimator.add_reflection_corrected_poa_to_df(data, config.tilt)
 
     # step 4.1. add dummy wind and air temp data
     data = helpers.panel_temperature_estimator.add_dummy_wind_and_temp(data, config.wind_speed, config.air_temp)
 
     # step 5. estimate panel temperature based on wind speed, air temperature and absorbed radiation
-    data = helpers.panel_temperature_estimator.add_estimated_panel_temperature(data)
+    data = helpers.panel_temperature_estimator.add_estimated_panel_temperature(data, config.module_elevation)
 
     # step 6. estimate power output
-    data = helpers.output_estimator.add_output_to_df(data)
+    data = helpers.output_estimator.add_output_to_df(config, data)
 
     # printing and plotting data
     print_full(data)
@@ -126,12 +126,12 @@ def full_processing_of_pvlib_data():
     plotter.add_label_y("Output(W)")
     plotter.add_title("Simulated solar PV system output")
     plotter.plot_curve(data["time"], data["output"], label="Output(W)")
-    plotter.plot_kwh_labels(data)
+    plotter.plot_kwh_labels(data, config.data_resolution)
     plotter.show_legend()
     plotter.show_plot()
 
 
-def get_fmi_data(day_range=3):
+def get_fmi_data(config: Config, day_range=3):
     """
     This function shows the steps used for generating power output data with fmi open. Also returns the power output.
     Note that FMI open only gives irradiance estimates for the next ~64 hours.
@@ -150,29 +150,29 @@ def get_fmi_data(day_range=3):
     date_start = datetime.datetime(today.year, today.month, today.day)
 
     # step 1. simulate irradiance components dni, dhi, ghi:
-    data = solar_irradiance_estimator.get_solar_irradiance(date_start, day_count=day_range, model="fmiopen")
+    data = solar_irradiance_estimator.get_solar_irradiance(config, date_start, day_count=day_range, model="fmiopen")
 
     # step 2. project irradiance components to plane of array:
-    data = helpers.irradiance_transpositions.irradiance_df_to_poa_df(data)
+    data = helpers.irradiance_transpositions.irradiance_df_to_poa_df(config, data)
 
     # step 3. simulate how much of irradiance components is absorbed:
-    data = helpers.reflection_estimator.add_reflection_corrected_poa_components_to_df(data)
+    data = helpers.reflection_estimator.add_reflection_corrected_poa_components_to_df(config, data)
 
     # step 4. compute sum of reflection-corrected components:
-    data = helpers.reflection_estimator.add_reflection_corrected_poa_to_df(data)
+    data = helpers.reflection_estimator.add_reflection_corrected_poa_to_df(data, config.tilt)
 
     # step 5. estimate panel temperature based on wind speed, air temperature and absorbed radiation
-    data = helpers.panel_temperature_estimator.add_estimated_panel_temperature(data)
+    data = helpers.panel_temperature_estimator.add_estimated_panel_temperature(data, config.module_elevation)
 
     # step 6. estimate power output
-    data = helpers.output_estimator.add_output_to_df(data)
+    data = helpers.output_estimator.add_output_to_df(config, data)
 
     config.data_resolution = original_data_resolution
 
     return data
 
 
-def get_pvlib_data(day_range=3, data_fmi=None):
+def get_pvlib_data(config: Config, day_range=3, data_fmi=None):
     """
     This function shows the steps used for generating power output data with pvlib. Also returns the power output.
     PVlib is fully simulated, no restrictions on day range.
@@ -184,16 +184,16 @@ def get_pvlib_data(day_range=3, data_fmi=None):
     today = datetime.date.today()
     date_start = datetime.datetime(today.year, today.month, today.day)
 
-    data_pvlib = solar_irradiance_estimator.get_solar_irradiance(date_start, day_count=day_range, model="pvlib")
+    data_pvlib = solar_irradiance_estimator.get_solar_irradiance(config, date_start, day_count=day_range, model="pvlib")
 
     # step 2. project irradiance components to plane of array:
-    data_pvlib = helpers.irradiance_transpositions.irradiance_df_to_poa_df(data_pvlib)
+    data_pvlib = helpers.irradiance_transpositions.irradiance_df_to_poa_df(config, data_pvlib)
 
     # step 3. simulate how much of irradiance components is absorbed:
-    data_pvlib = helpers.reflection_estimator.add_reflection_corrected_poa_components_to_df(data_pvlib)
+    data_pvlib = helpers.reflection_estimator.add_reflection_corrected_poa_components_to_df(config, data_pvlib)
 
     # step 4. compute sum of reflection-corrected components:
-    data_pvlib = helpers.reflection_estimator.add_reflection_corrected_poa_to_df(data_pvlib)
+    data_pvlib = helpers.reflection_estimator.add_reflection_corrected_poa_to_df(data_pvlib, config.tilt)
 
     # step 4.1. adding wind and air speed to dataframe
     if data_fmi is not None:
@@ -204,17 +204,17 @@ def get_pvlib_data(day_range=3, data_fmi=None):
         data_pvlib = helpers.panel_temperature_estimator.add_dummy_wind_and_temp(data_pvlib, config.wind_speed, config.air_temp)
 
     # step 5. estimate panel temperature based on wind speed, air temperature and absorbed radiation
-    data_pvlib = helpers.panel_temperature_estimator.add_estimated_panel_temperature(data_pvlib)
+    data_pvlib = helpers.panel_temperature_estimator.add_estimated_panel_temperature(data_pvlib, config.module_elevation)
 
     # step 6. estimate power output
-    data_pvlib = helpers.output_estimator.add_output_to_df(data_pvlib)
+    data_pvlib = helpers.output_estimator.add_output_to_df(config, data_pvlib)
 
     data_pvlib = data_pvlib.dropna()
 
     return data_pvlib
 
 
-def combined_processing_of_data():
+def combined_processing_of_data(config: Config):
     """
     Uses both pvlib and fmi open to compute solar irradiance for the next 4 days and plots both
     :return:
@@ -225,11 +225,11 @@ def combined_processing_of_data():
     print("Simulating clear sky and weather model based PV generation for the next " + str(day_range) + " days.")
     # fetching fmi data and generating solar pv output df
 
-    data_fmi = get_fmi_data(day_range)
+    data_fmi = get_fmi_data(config, day_range)
 
     # generating pvlib irradiance values and clear sky pv dataframe, passing fmi data to pvlib generator functions
     # for wind and air temp transfer
-    data_pvlib = get_pvlib_data(day_range, data_fmi)
+    data_pvlib = get_pvlib_data(config, day_range, data_fmi)
 
     # this line prints the full results into console/terminal
 
@@ -295,8 +295,9 @@ def combined_processing_of_data():
     if config.save_plot:
         print("-------------------------------------------------------------------------------------------------------")
         print("Plots exporting turned on in the config.py file")
-        plotter.plot_fmi_pvlib_mono(data_fmi, data_pvlib)
+        plotter.plot_fmi_pvlib_mono(config, data_fmi, data_pvlib)
 
 
 if __name__ == "__main__":
-    combined_processing_of_data()
+    # if executed as main file, run combined processing as our "main" function
+    combined_processing_of_data(Config())

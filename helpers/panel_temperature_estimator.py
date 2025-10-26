@@ -9,10 +9,8 @@ import math
 
 import pandas
 
-import config
 
-
-def add_estimated_panel_temperature(df: pandas.DataFrame) -> pandas.DataFrame:
+def add_estimated_panel_temperature(df: pandas.DataFrame, module_elevation: float) -> pandas.DataFrame:
     """
     Adds an estimate for panel temperature based on wind speed, air temperature and absorbed radiation.
     If air temperature, wind speed or absorbed radiation columns are missing, aborts.
@@ -41,7 +39,7 @@ def add_estimated_panel_temperature(df: pandas.DataFrame) -> pandas.DataFrame:
         return df
 
     def helper_add_panel_temp(df):
-        estimated_temp = temperature_of_module(df["poa_ref_cor"], df["wind"], config.module_elevation, df["T"])
+        estimated_temp = temperature_of_module(df["poa_ref_cor"], df["wind"], module_elevation, df["T"])
         if math.isnan(estimated_temp):
             return df["T"]
         else:
@@ -107,9 +105,7 @@ def add_wind_and_temp_to_df1_from_df2(df1: pandas.DataFrame, df2: pandas.DataFra
     return df1
 
 
-def temperature_of_module(
-    absorbed_radiation: float, wind: float, module_elevation: float, air_temperature: float
-) -> float:
+def temperature_of_module(absorbed_radiation: float, wind: float, module_elevation: float, air_temperature: float) -> float:
     """
     :param absorbed_radiation: radiation hitting solar panel after reflections are accounted for in W
     :param wind: wind speed in meters per second

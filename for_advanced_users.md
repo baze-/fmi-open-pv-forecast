@@ -106,28 +106,30 @@ These represent different types of irradiance which is radiated towards solar pa
 ```python
 # This function is located in main.py
 def get_fmi_data(day_range= 3):
+    config = Config()
+
     # date for simulation:
     today = datetime.date.today()
     date_start = datetime.datetime(today.year, today.month, today.day)
 
     # step 1. simulate irradiance components dni, dhi, ghi:
-    data = solar_irradiance_estimator.get_solar_irradiance(date_start, day_count=day_range, model="fmiopen")
+    data = solar_irradiance_estimator.get_solar_irradiance(config, date_start, day_count=day_range, model="fmiopen")
 
     # step 2. project irradiance components to plane of array:
-    data = helpers.irradiance_transpositions.irradiance_df_to_poa_df(data)
+    data = helpers.irradiance_transpositions.irradiance_df_to_poa_df(config, data)
 
     # step 3. simulate how much of irradiance components is absorbed:
-    data = helpers.reflection_estimator.add_reflection_corrected_poa_components_to_df(data)
+    data = helpers.reflection_estimator.add_reflection_corrected_poa_components_to_df(config, data)
 
     # step 4. compute sum of reflection corrected components:
-    data = helpers.reflection_estimator.add_reflection_corrected_poa_to_df(data)
+    data = helpers.reflection_estimator.add_reflection_corrected_poa_to_df(data, config.tilt)
 
     # step 5. estimate panel temperature based on wind speed, air temperature and absorbed radiation
-    data = helpers.panel_temperature_estimator.add_estimated_panel_temperature(data)
+    data = helpers.panel_temperature_estimator.add_estimated_panel_temperature(data, config.module_elevation)
 
     # step 6. estimate power output
-    data = helpers.output_estimator.add_output_to_df(data)
-
+    data = helpers.output_estimator.add_output_to_df(config, data)
+ 
     return data
 ```
 
@@ -140,6 +142,8 @@ def combined_processing_of_data():
     :return:
     """
 
+    config = Config()
+
     # helper functions:
     data_pvlib = get_pvlib_data(4)
     data_fmi = get_fmi_data(4)
@@ -148,6 +152,6 @@ def combined_processing_of_data():
     print_full(data_pvlib)
     
     # mono plotting
-    plotter.plot_fmi_pvlib_mono(data_fmi, data_pvlib)
+    plotter.plot_fmi_pvlib_mono(config, data_fmi, data_pvlib)
 
 ```

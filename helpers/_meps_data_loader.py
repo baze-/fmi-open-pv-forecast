@@ -21,11 +21,11 @@ import pandas
 import pandas as pd
 from fmiopendata.wfs import download_stored_query
 
-import config
+from config import Config
 from helpers import astronomical_calculations
 
 
-def load_cached_data(cache_filename: str) -> dict | None:
+def load_cached_data(config: Config, cache_filename: str) -> dict | None:
     if config.use_caching is False:
         return None
 
@@ -46,7 +46,7 @@ def load_cached_data(cache_filename: str) -> dict | None:
         return None
 
 
-def save_cached_data(cache_filename: str, data: dict) -> None:
+def save_cached_data(config: Config, cache_filename: str, data: dict) -> None:
     if config.use_caching is False:
         return None
 
@@ -61,7 +61,7 @@ def save_cached_data(cache_filename: str, data: dict) -> None:
         json.dump(data_to_save, f, indent=4)
 
 
-def collect_fmi_opendata(latlon: str, start_time: datetime, end_time: datetime) -> pandas.DataFrame:
+def collect_fmi_opendata(config: Config, latlon: str, start_time: datetime, end_time: datetime) -> pandas.DataFrame:
     """
     :param latlon:      str(latitude) + "," + str(longitude)
     :param start_time:  2013-03-05T12:00:00Z ISO TIME
@@ -85,7 +85,7 @@ def collect_fmi_opendata(latlon: str, start_time: datetime, end_time: datetime) 
     # Check if we could find previously cached data from file.
     # (File name has DD_MM_YYYY_HHMM in it to ensure it goes stale by time.)
     cache_filename = config.save_directory + "cache_fmiopendata_" + start_time.strftime("%d_%m_%Y_%H%M") + ".json"
-    cache_data = load_cached_data(cache_filename)
+    cache_data = load_cached_data(config, cache_filename)
     if cache_data:
         # If cached data is available, use it.
         print("Using cached FMI open data from: " + cache_filename)
@@ -100,7 +100,7 @@ def collect_fmi_opendata(latlon: str, start_time: datetime, end_time: datetime) 
 
         # Save loaded data to cache for future use
         print("Saving FMI open data to cache: " + cache_filename)
-        save_cached_data(cache_filename, data)
+        save_cached_data(config, cache_filename, data)
 
     # Times to use in forming dataframe
     data_list = []
@@ -149,7 +149,7 @@ def collect_fmi_opendata(latlon: str, start_time: datetime, end_time: datetime) 
 
     # Adding solar zenith angle to df
     df["time"] = df.index
-    df["sza"] = astronomical_calculations.get_solar_azimuth_zenit_fast(df["time"])[1]
+    df["sza"] = astronomical_calculations.get_solar_azimuth_zenit_fast(config, df["time"])[1]
     # solar zenit angle added
 
     # Calculate dni from dhi

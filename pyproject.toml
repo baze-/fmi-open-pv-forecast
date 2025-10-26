@@ -14,6 +14,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "ruff>=0.14.2",  # Use ruff for linting and formatting
+    "invoke (>=2.2.1,<3.0.0)", # Use invoke for task execution (like linting etc.)
 ]
 
 [project.scripts]
