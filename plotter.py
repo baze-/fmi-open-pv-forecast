@@ -13,7 +13,7 @@ import pytz
 from matplotlib import dates
 from matplotlib.dates import DateFormatter
 
-import config
+from config import Config
 
 global fig
 global ax
@@ -102,7 +102,7 @@ def set_size(x, y):
 # COMPOUND FUNCTIONS ############################################
 
 
-def plot_kwh_labels(df, y_offset=0):
+def plot_kwh_labels(df, data_resolution: int, y_offset=0):
     df2 = df[["time", "output"]].copy()
 
     df2["date"] = pandas.to_datetime(df2["time"]).dt.date
@@ -111,7 +111,7 @@ def plot_kwh_labels(df, y_offset=0):
     df2 = df2.drop("time", axis=1)
     df2 = df2.groupby(["date"]).sum()
 
-    df2["output_kwh"] = df2["output"] / 1000 * (60 / config.data_resolution)
+    df2["output_kwh"] = df2["output"] / 1000 * (60 / data_resolution)
 
     for index, row in df2.iterrows():
         x_value = datetime(index.year, index.month, index.day, 8)
@@ -126,7 +126,7 @@ def default_labels_and_title(date):
     add_label_x("Time")
 
 
-def plot_fmi_pvlib_mono(data_fmi, data_pvlib):
+def plot_fmi_pvlib_mono(config: Config, data_fmi, data_pvlib):
     """
     Generates a plot from 2 dataframes with time and output columns.
     :param data_fmi:
@@ -249,7 +249,7 @@ def plot_fmi_pvlib_mono(data_fmi, data_pvlib):
     # matplotlib.pyplot.show()
 
 
-def __get_dayily_power_sums(data, resolution=config.data_resolution):
+def __get_dayily_power_sums(data, data_resolution: float):
     df = data[["time", "output"]].copy()
 
     df["date"] = pandas.to_datetime(df["time"]).dt.date
@@ -257,7 +257,7 @@ def __get_dayily_power_sums(data, resolution=config.data_resolution):
     df = df.drop("time", axis=1)
     df = df.groupby(["date"]).sum()
 
-    df["output_kwh"] = (df["output"] / 1000) / (60 / resolution)
+    df["output_kwh"] = (df["output"] / 1000) / (60 / data_resolution)
 
     xvalues = []
     yvalues = []

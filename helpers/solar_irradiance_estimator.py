@@ -16,7 +16,7 @@ import pandas
 import pandas as pd
 from pvlib import location
 
-import config
+from config import Config
 from helpers import _meps_data_loader
 
 """
@@ -26,7 +26,7 @@ Currently supports pvlib simulations and fmi open data
 """
 
 
-def get_solar_irradiance(date_start: datetime, day_count: int, model="pvlib") -> pandas.DataFrame:
+def get_solar_irradiance(config: Config, date_start: datetime, day_count: int, model="pvlib") -> pandas.DataFrame:
     """
     Returns a dataframe with datetime, ghi, dni and dhi values.
     Example output:
@@ -51,23 +51,23 @@ def get_solar_irradiance(date_start: datetime, day_count: int, model="pvlib") ->
 
     match model:
         case "pvlib" | "pvlib_ineichen" | "inechen":
-            return __get_irradiance_pvlib(date_start, date_end)
+            return __get_irradiance_pvlib(config, date_start, date_end)
         case "pvlib_simplified_solis" | "simplified_solis" | "solis":
-            return __get_irradiance_pvlib(date_start, date_end, mod="simplified_solis")
+            return __get_irradiance_pvlib(config, date_start, date_end, mod="simplified_solis")
         case "meps" | "fmi_open" | "fmiopen":
-            return __get_irradiance_fmiopen(date_start, date_end)
+            return __get_irradiance_fmiopen(config, date_start, date_end)
 
     # none of the cases activated:
     print(f"Error: model {model} not programmed into the system. Check file solar_irradiance_estimator.py")
     sys.exit(1)
 
 
-def __get_irradiance_fmiopen(date_start: datetime, date_end: datetime) -> pandas.DataFrame:
+def __get_irradiance_fmiopen(config: Config, date_start: datetime, date_end: datetime) -> pandas.DataFrame:
     latlon = str(config.latitude) + "," + str(config.longitude)
-    return _meps_data_loader.collect_fmi_opendata(latlon, date_start, date_end)
+    return _meps_data_loader.collect_fmi_opendata(config, latlon, date_start, date_end)
 
 
-def __get_irradiance_pvlib(date_start: datetime, date_end: datetime, mod="ineichen") -> pandas.DataFrame:
+def __get_irradiance_pvlib(config: Config, date_start: datetime, date_end: datetime, mod="ineichen") -> pandas.DataFrame:
     """
     PVlib based clear sky irradiance modeling
     :param date: Datetime object containing a date

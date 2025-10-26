@@ -11,7 +11,7 @@ import numpy
 import pandas
 import pandas as pd
 
-import config
+from config import Config
 
 
 def print_full(x: pandas.DataFrame):
@@ -32,7 +32,7 @@ def print_full(x: pandas.DataFrame):
     pd.reset_option("display.max_colwidth")
 
 
-def add_output_to_df(df: pandas.DataFrame) -> pandas.DataFrame:
+def add_output_to_df(config: Config, df: pandas.DataFrame) -> pandas.DataFrame:
     """
     Checker function for testing if required parameters exist in DF, if they do, add output to DF.
     :param df: Pandas dataframe with required columns for absorbed irradiance and panel temperature.
@@ -53,7 +53,7 @@ def add_output_to_df(df: pandas.DataFrame) -> pandas.DataFrame:
     # this low, the system would not produce any power and values of 0.0 cause issues as the output model contains
     # logarithms
     df["output"] = df.apply(
-        lambda row: 0.0 if row["poa_ref_cor"] < 0.1 else __estimate_output(row["poa_ref_cor"], row["module_temp"]),
+        lambda row: 0.0 if row["poa_ref_cor"] < 0.1 else __estimate_output(row["poa_ref_cor"], row["module_temp"], config.rated_power),
         axis=1,
     )
 
@@ -63,7 +63,7 @@ def add_output_to_df(df: pandas.DataFrame) -> pandas.DataFrame:
     return df
 
 
-def __estimate_output(absorbed_radiation: float, panel_temp: float) -> float:
+def __estimate_output(absorbed_radiation: float, panel_temp: float, rated_power: float) -> float:
     """
     Huld 2010 model
     T.~Huld, R.~Gottschalg, H.~G. Beyer, and M.~Topič,
@@ -114,7 +114,7 @@ def __estimate_output(absorbed_radiation: float, panel_temp: float) -> float:
 
     nrad = absorbed_radiation / 1000.0
     Tdiff = panel_temp - 25
-    rated_power = config.rated_power * 1000.0
+    rated_power = rated_power * 1000.0
     base = 1
 
     part_k1 = k1 * numpy.log(nrad)

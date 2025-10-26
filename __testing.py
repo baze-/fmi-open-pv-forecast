@@ -3,10 +3,10 @@ import time
 
 import pandas
 
-import config
 import helpers.irradiance_transpositions
 import main
 import plotter
+from config import Config
 from helpers import (
     panel_temperature_estimator,
     solar_irradiance_estimator,
@@ -26,6 +26,8 @@ def __timed_combined_processing_of_data():
     Time pvlib 0.027
     Time plotting 0.319
     """
+
+    config = Config()
 
     day_range = 3
 
@@ -94,7 +96,7 @@ def __timed_combined_processing_of_data():
 
     time4 = time.time()
 
-    plotter.plot_fmi_pvlib_mono(data_fmi, data_pvlib)
+    plotter.plot_fmi_pvlib_mono(config, data_fmi, data_pvlib)
 
     time5 = time.time()
 
@@ -125,29 +127,31 @@ def __debug_measure_function_speeds(day_range=3, data_fmi=None):
 
     """
 
+    config = Config()
+
     # date for simulation:
     today = datetime.datetime(2024, 6, 12)  # datetime.date.today()
     date_start = datetime.datetime(today.year, today.month, today.day)
 
-    data_pvlib = solar_irradiance_estimator.get_solar_irradiance(date_start, day_count=day_range, model="pvlib")
+    data_pvlib = solar_irradiance_estimator.get_solar_irradiance(config, date_start, day_count=day_range, model="pvlib")
 
     time_1 = time.time()
 
     # step 2. project irradiance components to plane of array:
     # this can do about transpose about 10 000 measurements in 0.115 seconds. No further optimization needed
-    data_pvlib = helpers.irradiance_transpositions.irradiance_df_to_poa_df(data_pvlib)
+    data_pvlib = helpers.irradiance_transpositions.irradiance_df_to_poa_df(config, data_pvlib)
 
     time_2 = time.time()
 
     # step 3. simulate how much of irradiance components is absorbed:
     # this does 10k in 23 seconds, optimize
-    data_pvlib = helpers.reflection_estimator.add_reflection_corrected_poa_components_to_df(data_pvlib)
+    data_pvlib = helpers.reflection_estimator.add_reflection_corrected_poa_components_to_df(config, data_pvlib)
 
     time_3 = time.time()
 
     # step 4. compute sum of reflection-corrected components:
     # 10k in 24 seconds, optimize
-    data_pvlib = helpers.reflection_estimator.add_reflection_corrected_poa_to_df(data_pvlib)
+    data_pvlib = helpers.reflection_estimator.add_reflection_corrected_poa_to_df(data_pvlib, config.tilt)
 
     # print_full(data_pvlib)
     time_4 = time.time()
@@ -165,13 +169,13 @@ def __debug_measure_function_speeds(day_range=3, data_fmi=None):
 
     # step 5. estimate panel temperature based on wind speed, air temperature and absorbed radiation
     # 10k in 0.06 seconds, no need to optimize
-    data_pvlib = helpers.panel_temperature_estimator.add_estimated_panel_temperature(data_pvlib)
+    data_pvlib = helpers.panel_temperature_estimator.add_estimated_panel_temperature(data_pvlib, config.module_elevation)
 
     time_6 = time.time()
 
     # step 6. estimate power output
     # 10k in 0.07 seconds, no need to optimize
-    data_pvlib = helpers.output_estimator.add_output_to_df(data_pvlib)
+    data_pvlib = helpers.output_estimator.add_output_to_df(config, data_pvlib)
 
     time_7 = time.time()
 
@@ -204,23 +208,25 @@ def __process_irradiance_data(meps_data: pandas.DataFrame):
     If input does not contain T and wind values, dummies will be added
     """
 
+    config = Config()
+
     # step 2. project irradiance components to plane of array:
-    data = helpers.irradiance_transpositions.irradiance_df_to_poa_df(meps_data)
+    data = helpers.irradiance_transpositions.irradiance_df_to_poa_df(config, meps_data)
 
     # step 3. simulate how much of irradiance components is absorbed:
-    data = helpers.reflection_estimator.add_reflection_corrected_poa_components_to_df(data)
+    data = helpers.reflection_estimator.add_reflection_corrected_poa_components_to_df(config, data)
 
     # step 4. compute sum of reflection-corrected components:
-    data = helpers.reflection_estimator.add_reflection_corrected_poa_to_df(data)
+    data = helpers.reflection_estimator.add_reflection_corrected_poa_to_df(data, config.tilt)
 
     # step 4.1. add dummy wind and air temp data
     if "T" not in meps_data.columns or "wind" not in meps_data.columns:
         data = helpers.panel_temperature_estimator.add_dummy_wind_and_temp(data, config.wind_speed, config.air_temp)
 
     # step 5. estimate panel temperature based on wind speed, air temperature and absorbed radiation
-    data = helpers.panel_temperature_estimator.add_estimated_panel_temperature(data)
+    data = helpers.panel_temperature_estimator.add_estimated_panel_temperature(data, config.module_elevation)
 
     # step 6. estimate power output
-    data = helpers.output_estimator.add_output_to_df(data)
+    data = helpers.output_estimator.add_output_to_df(config, data)
 
     return data
