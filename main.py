@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import datetime
+import importlib.util
+import sys
 
 import pandas
 import pandas as pd
@@ -298,6 +300,35 @@ def combined_processing_of_data(config: Config):
         plotter.plot_fmi_pvlib_mono(config, data_fmi, data_pvlib)
 
 
+def load_config_from_file(config_file: str) -> Config:
+    """
+    Loads a Config class from a given file path.
+    :param config_file_path: Path to the config file.
+    :return: Config object.
+    """
+    # Import the config file dynamically
+
+    # Import the Config class from the specified config file.
+    # And initialize it as config.
+    spec = importlib.util.spec_from_file_location("config_module", config_file)
+    if spec is None or spec.loader is None:
+        print(f"Cannot import module from {config_file}")
+        sys.exit(1)
+
+    config_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(config_module)
+    return config_module.Config()
+
+
 if __name__ == "__main__":
+    # Check if a config file was provided as command line argument
+    if len(sys.argv) > 1:
+        config_file = sys.argv[1]
+        print(f"Loading config file {config_file}")
+        config = load_config_from_file(config_file)
+    else:
+        print("Using default config file config.py")
+        config = Config()
+
     # if executed as main file, run combined processing as our "main" function
-    combined_processing_of_data(Config())
+    combined_processing_of_data(config)
