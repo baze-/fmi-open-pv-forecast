@@ -59,10 +59,15 @@ Further validification and model testing has been planned for the upcoming month
 2. run `poetry install` to install dependencies
 3. run `./main.py`
 
+If you want to have multiple solar panel setups configured, just create multiple copies from "config.py", modify each
+and then provide config file as command line argument:
+
+4. run with another config file `./main.py copy_of_config.py`
+
 ### For developers
 
 - Run `poetry install --extras dev` to install dev dependencies (like linting tools)
-- Run `ruff check` to check code linting before git PR
+- Run `invoke lint` to check code linting before git PR
 
 ## Software requirements
 In order to run the program, you need a python environment with python 3.11 or newer and the following packages:
@@ -183,6 +188,7 @@ than it has to be.
 ### Changes 2025-10-26:
 - Added `invoke` to help linting code. (run `invoke lint` to make sure decent coding style used.)
 - Refactored global variables away (config) and made passing all needed variables to functions explicit
+- Added config-file as optional command line parameter.
 
 
 ### TODO:
